@@ -7,6 +7,7 @@
 #include "I2Cdev.h"
 #include "MPU6050.h"
 #include "Wire.h"
+#include <Ultrasonic.h>
 
 const char* ssid = "muccc.legacy-2.4GHz";
 const char* password = "haileris";
@@ -29,7 +30,7 @@ class Motor {
 
 class WebServer {
     public:
-        WebServer(Motor *motorLeft, Motor *motorRight);
+        WebServer(Motor *motorLeft, Motor *motorRight, Ultrasonic *ultrasonic);
         ~WebServer(void);
         void update(void);
 
@@ -39,12 +40,14 @@ class WebServer {
         WiFiServer *server;
         Motor *motorLeft;
         Motor *motorRight;
+        Ultrasonic *ultrasonic;
 };
 
-WebServer::WebServer(Motor *motorLeft, Motor *motorRight)
+WebServer::WebServer(Motor *motorLeft, Motor *motorRight, Ultrasonic *ultrasonic)
 {
     this->motorLeft = motorLeft;
     this->motorRight = motorRight;
+    this->ultrasonic = ultrasonic;
 
     server = new WiFiServer(80);
     server->begin();
@@ -69,6 +72,7 @@ void WebServer::printIndex(WiFiClient *client)
     client->print("<div id=\"dmEvent\"/>");
     client->print("<div id=\"vector\"/>");
     client->print("<div id=\"EPSStatus\"/>");
+    client->printf("<p>distance: %li cm</p>", ultrasonic->Ranging(CM));
     client->print("</font></body></html>");
 }
 
@@ -255,6 +259,7 @@ void readGyroHTML(){
 Motor *motorLeft;
 Motor *motorRight;
 WebServer *web;
+Ultrasonic ultrasonic(D6,D5); // (Trig PIN,Echo PIN)
 
 void setup() {
     Serial.begin(115200);
@@ -279,7 +284,7 @@ void setup() {
 
     motorLeft = new Motor(0, 5, true);
     motorRight = new Motor(2, 4, false);
-    web = new WebServer(motorLeft, motorRight);
+    web = new WebServer(motorLeft, motorRight, &ultrasonic);
 
     Serial.println("Server started");
 }
